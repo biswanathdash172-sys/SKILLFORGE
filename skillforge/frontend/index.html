@@ -1,0 +1,1679 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkillForge — Career + Finance Co-Pilot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0b1220;
+        --panel: #121b2e;
+        --panel-hi: #1b2740;
+        --line: #22304a;
+        --teal: #4fd1c5;
+        --teal-dim: #2c7a72;
+        --gold: #e8b04b;
+        --text-hi: #edf1f7;
+        --text-lo: #8b96a8;
+        --danger: #e8677a;
+        --radius: 10px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--ink);
+        color: var(--text-hi);
+        font-family: "Inter", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      h1,
+      h2,
+      h3,
+      .display {
+        font-family: "Space Grotesk", sans-serif;
+      }
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+      a {
+        color: inherit;
+      }
+      button {
+        font-family: "Inter", sans-serif;
+        cursor: pointer;
+      }
+
+      /* ---------- Layout ---------- */
+      .shell {
+        display: flex;
+        min-height: 100vh;
+      }
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: var(--panel);
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        padding: 22px 14px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 8px 22px 8px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 18px;
+      }
+      .brand-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, var(--teal), var(--teal-dim));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Space Grotesk";
+        font-weight: 700;
+        font-size: 15px;
+        color: #06110f;
+        flex-shrink: 0;
+      }
+      .brand-name {
+        font-family: "Space Grotesk";
+        font-weight: 600;
+        font-size: 15.5px;
+        letter-spacing: 0.2px;
+      }
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 10px;
+        border-radius: 8px;
+        color: var(--text-lo);
+        font-size: 13.5px;
+        font-weight: 500;
+        border: none;
+        background: transparent;
+        text-align: left;
+        width: 100%;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      .nav-item svg {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        opacity: 0.85;
+      }
+      .nav-item:hover {
+        background: var(--panel-hi);
+        color: var(--text-hi);
+      }
+      .nav-item.active {
+        background: var(--panel-hi);
+        color: var(--teal);
+      }
+      .nav-item.active svg {
+        opacity: 1;
+      }
+      .sidebar-foot {
+        margin-top: auto;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        font-size: 11px;
+        color: var(--text-lo);
+      }
+      .api-row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        margin-top: 8px;
+      }
+      .api-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--danger);
+        flex-shrink: 0;
+      }
+      .api-dot.ok {
+        background: var(--teal);
+      }
+      #apiBaseInput {
+        width: 100%;
+        background: var(--ink);
+        border: 1px solid var(--line);
+        color: var(--text-lo);
+        font-family: "JetBrains Mono";
+        font-size: 10.5px;
+        padding: 6px 7px;
+        border-radius: 6px;
+        margin-top: 6px;
+      }
+
+      .main {
+        flex: 1;
+        min-width: 0;
+        padding: 34px 40px 60px;
+        max-width: 1180px;
+      }
+      .view {
+        display: none;
+      }
+      .view.active {
+        display: block;
+        animation: fade 0.25s ease;
+      }
+      @keyframes fade {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      .page-head {
+        margin-bottom: 26px;
+      }
+      .eyebrow {
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--teal);
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .page-head h1 {
+        font-size: 26px;
+        margin: 0 0 6px;
+        font-weight: 600;
+      }
+      .page-head p {
+        color: var(--text-lo);
+        margin: 0;
+        font-size: 14px;
+        max-width: 560px;
+        line-height: 1.5;
+      }
+
+      /* ---------- Cards / grid ---------- */
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+      .grid-3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .grid-2 {
+        grid-template-columns: 1.3fr 1fr;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+      }
+      .card h3 {
+        font-size: 13px;
+        margin: 0 0 4px;
+        color: var(--text-lo);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .stat {
+        font-family: "JetBrains Mono";
+        font-size: 26px;
+        font-weight: 700;
+        margin-top: 6px;
+      }
+      .stat.teal {
+        color: var(--teal);
+      }
+      .stat.gold {
+        color: var(--gold);
+      }
+
+      /* readiness ring — signature element */
+      .ring-wrap {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .ring {
+        position: relative;
+        width: 74px;
+        height: 74px;
+        flex-shrink: 0;
+      }
+      .ring svg {
+        transform: rotate(-90deg);
+      }
+      .ring-val {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "JetBrains Mono";
+        font-weight: 700;
+        font-size: 16px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+      }
+      th {
+        text-align: left;
+        color: var(--text-lo);
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--line);
+      }
+      td {
+        padding: 10px 10px;
+        border-bottom: 1px solid var(--line);
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      td.mono,
+      .amt {
+        font-family: "JetBrains Mono";
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 600;
+        background: rgba(79, 209, 197, 0.12);
+        color: var(--teal);
+      }
+      .badge.gold {
+        background: rgba(232, 176, 75, 0.12);
+        color: var(--gold);
+      }
+      .badge.danger {
+        background: rgba(232, 103, 122, 0.12);
+        color: var(--danger);
+      }
+
+      .btn {
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid var(--line);
+        background: var(--panel-hi);
+        color: var(--text-hi);
+      }
+      .btn:hover {
+        border-color: var(--teal);
+      }
+      .btn.primary {
+        background: var(--teal);
+        color: #06110f;
+        border-color: var(--teal);
+      }
+      .btn.primary:hover {
+        background: #5ee0d3;
+      }
+      .btn.ghost {
+        background: transparent;
+      }
+      .btn.danger {
+        color: var(--danger);
+        border-color: transparent;
+        background: transparent;
+        padding: 6px 8px;
+      }
+      .btn.small {
+        padding: 5px 10px;
+        font-size: 12px;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        background: var(--ink);
+        border: 1px solid var(--line);
+        color: var(--text-hi);
+        padding: 9px 11px;
+        border-radius: 8px;
+        font-size: 13.5px;
+        font-family: "Inter";
+      }
+      textarea {
+        resize: vertical;
+        min-height: 120px;
+        font-family: "JetBrains Mono";
+        font-size: 12.5px;
+        line-height: 1.5;
+      }
+      label {
+        font-size: 12px;
+        color: var(--text-lo);
+        font-weight: 600;
+        margin-bottom: 5px;
+        display: block;
+      }
+      .field {
+        margin-bottom: 14px;
+      }
+      .field-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .modal-bg {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(6, 10, 18, 0.65);
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+      }
+      .modal-bg.active {
+        display: flex;
+      }
+      .modal {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 24px;
+        width: 420px;
+        max-width: 92vw;
+        max-height: 86vh;
+        overflow: auto;
+      }
+      .modal h3 {
+        margin: 0 0 16px;
+        font-size: 16px;
+        font-family: "Space Grotesk";
+      }
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 18px;
+      }
+
+      .empty {
+        border: 1px dashed var(--line);
+        border-radius: var(--radius);
+        padding: 34px;
+        text-align: center;
+        color: var(--text-lo);
+      }
+      .empty h4 {
+        color: var(--text-hi);
+        margin: 0 0 6px;
+        font-family: "Space Grotesk";
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 22px;
+        right: 22px;
+        background: var(--panel-hi);
+        border: 1px solid var(--line);
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        z-index: 100;
+        display: none;
+        border-left: 3px solid var(--teal);
+      }
+      .toast.danger {
+        border-left-color: var(--danger);
+      }
+      .toast.show {
+        display: block;
+        animation: fade 0.2s ease;
+      }
+
+      /* Home / hero */
+      .hero {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 40px;
+        background:
+          radial-gradient(
+            circle at 85% -10%,
+            rgba(79, 209, 197, 0.14),
+            transparent 55%
+          ),
+          var(--panel);
+        margin-bottom: 22px;
+      }
+      .hero .eyebrow {
+        margin-bottom: 10px;
+      }
+      .hero h1 {
+        font-size: 34px;
+        margin: 0 0 14px;
+        max-width: 520px;
+        line-height: 1.15;
+      }
+      .hero p {
+        color: var(--text-lo);
+        font-size: 15px;
+        max-width: 480px;
+        line-height: 1.6;
+        margin: 0 0 22px;
+      }
+      .hero-actions {
+        display: flex;
+        gap: 10px;
+      }
+      .flow {
+        display: flex;
+        gap: 0;
+        margin-top: 30px;
+        flex-wrap: wrap;
+      }
+      .flow-step {
+        flex: 1;
+        min-width: 150px;
+        padding: 16px 18px;
+        border-left: 1px solid var(--line);
+      }
+      .flow-step:first-child {
+        border-left: none;
+      }
+      .flow-step .n {
+        font-family: "JetBrains Mono";
+        color: var(--teal);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .flow-step h4 {
+        margin: 8px 0 4px;
+        font-size: 14px;
+        font-family: "Space Grotesk";
+      }
+      .flow-step p {
+        margin: 0;
+        font-size: 12.5px;
+        color: var(--text-lo);
+        line-height: 1.5;
+      }
+
+      .skill-bar-track {
+        background: var(--ink);
+        border-radius: 6px;
+        height: 6px;
+        overflow: hidden;
+        margin-top: 6px;
+      }
+      .skill-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--teal-dim), var(--teal));
+      }
+
+      .pill-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      .pill {
+        background: var(--ink);
+        border: 1px solid var(--line);
+        padding: 3px 9px;
+        border-radius: 100px;
+        font-size: 11px;
+        color: var(--text-lo);
+      }
+      .pill.miss {
+        color: var(--danger);
+        border-color: rgba(232, 103, 122, 0.3);
+      }
+      .pill.match {
+        color: var(--teal);
+        border-color: rgba(79, 209, 197, 0.3);
+      }
+
+      ::placeholder {
+        color: #586378;
+      }
+      ::-webkit-scrollbar {
+        width: 9px;
+        height: 9px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--panel-hi);
+        border-radius: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      @media (max-width: 900px) {
+        .sidebar {
+          position: fixed;
+          left: -240px;
+          transition: left 0.2s;
+          z-index: 60;
+        }
+        .sidebar.open {
+          left: 0;
+        }
+        .main {
+          padding: 22px;
+        }
+        .grid-3,
+        .grid-2,
+        .field-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <nav class="sidebar" id="sidebar">
+        <div class="brand">
+          <div class="brand-mark">SF</div>
+          <div class="brand-name">SkillForge</div>
+        </div>
+        <div class="nav" id="navList">
+          <button class="nav-item active" data-view="home">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M3 11l9-8 9 8" />
+              <path d="M5 10v10h14V10" />
+            </svg>
+            Home
+          </button>
+          <button class="nav-item" data-view="skills">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+            </svg>
+            Skills
+          </button>
+          <button class="nav-item" data-view="finance">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="2" y="6" width="20" height="13" rx="2" />
+              <path d="M2 10h20" />
+            </svg>
+            Finance
+          </button>
+          <button class="nav-item" data-view="analyze">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M9 12l2 2 4-4" />
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+            Resume Analyzer
+          </button>
+          <button class="nav-item" data-view="plans">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M4 19V6a2 2 0 012-2h9l5 5v10a2 2 0 01-2 2H6a2 2 0 01-2-2z"
+              />
+              <path d="M9 13h6M9 17h6" />
+            </svg>
+            Learning Plans
+          </button>
+        </div>
+        <div class="sidebar-foot">
+          API connection
+          <div class="api-row">
+            <span class="api-dot" id="apiDot"></span
+            ><span id="apiStatusText">checking…</span>
+          </div>
+          <input
+            id="apiBaseInput"
+            class="mono"
+            value=""
+            placeholder="same-origin (auto)"
+            spellcheck="false"
+          />
+        </div>
+      </nav>
+
+      <main class="main">
+        <!-- ============ HOME ============ -->
+        <section class="view active" id="view-home">
+          <div class="hero">
+            <div class="eyebrow">AI Career + Finance Co-Pilot</div>
+            <h1>
+              Close the gap between the job you want and the skills you've got —
+              without blowing your budget.
+            </h1>
+            <p>
+              SkillForge reads your resume against a target job description,
+              scores your readiness, and builds a week-by-week learning plan
+              sized to your time and money. Everything below is wired to the
+              live API — try it.
+            </p>
+            <div class="hero-actions">
+              <button class="btn primary" data-view-link="analyze">
+                Run a demo analysis
+              </button>
+              <button class="btn ghost" data-view-link="skills">
+                View skill tracker
+              </button>
+            </div>
+            <div class="flow">
+              <div class="flow-step">
+                <div class="n">01</div>
+                <h4>Paste resume + JD</h4>
+                <p>
+                  Drop your resume text and a target job description into the
+                  analyzer.
+                </p>
+              </div>
+              <div class="flow-step">
+                <div class="n">02</div>
+                <h4>Get a readiness score</h4>
+                <p>
+                  Claude extracts your matching and missing skills and scores
+                  the gap.
+                </p>
+              </div>
+              <div class="flow-step">
+                <div class="n">03</div>
+                <h4>Generate a plan</h4>
+                <p>
+                  A weekly learning plan is built from the gap, sized to hours
+                  and INR budget.
+                </p>
+              </div>
+              <div class="flow-step">
+                <div class="n">04</div>
+                <h4>Track and export</h4>
+                <p>
+                  Log skill progress, tag spend against skills, export the plan
+                  as a deck.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-3" id="homeStats">
+            <div class="card">
+              <h3>Skills tracked</h3>
+              <div class="stat teal" id="statSkills">—</div>
+            </div>
+            <div class="card">
+              <h3>Total learning spend</h3>
+              <div class="stat gold" id="statSpend">—</div>
+            </div>
+            <div class="card">
+              <h3>Latest readiness score</h3>
+              <div class="stat" id="statScoreWrap">—</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ SKILLS ============ -->
+        <section class="view" id="view-skills">
+          <div class="page-head">
+            <div class="eyebrow">Skill Tracker</div>
+            <h1>Skills</h1>
+            <p>
+              Track current vs. target proficiency for every skill you're
+              building, with priority weighting.
+            </p>
+          </div>
+          <div class="toolbar">
+            <span
+              class="mono"
+              style="color: var(--text-lo); font-size: 12px"
+              id="skillCount"
+              >0 skills</span
+            >
+            <button class="btn primary" id="btnAddSkill">+ Add skill</button>
+          </div>
+          <div class="card" style="padding: 0; overflow: auto">
+            <table id="skillsTable">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Progress</th>
+                  <th>Priority</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="skillsBody"></tbody>
+            </table>
+          </div>
+          <div
+            class="empty"
+            id="skillsEmpty"
+            style="display: none; margin-top: 14px"
+          >
+            <h4>No skills yet</h4>
+            <p>Add the skills you're developing to start tracking progress.</p>
+          </div>
+        </section>
+
+        <!-- ============ FINANCE ============ -->
+        <section class="view" id="view-finance">
+          <div class="page-head">
+            <div class="eyebrow">Ledger</div>
+            <h1>Finance</h1>
+            <p>
+              Every rupee spent on learning, tagged to the skill it's funding.
+            </p>
+          </div>
+          <div class="grid grid-3" style="margin-bottom: 18px">
+            <div class="card">
+              <h3>Total spend</h3>
+              <div class="stat gold" id="finTotal">₹0</div>
+            </div>
+            <div class="card">
+              <h3>Transactions</h3>
+              <div class="stat teal" id="finCount">0</div>
+            </div>
+            <div class="card">
+              <h3>Recurring monthly</h3>
+              <div class="stat" id="finRecurring">₹0</div>
+            </div>
+          </div>
+          <div class="toolbar">
+            <span class="mono" style="color: var(--text-lo); font-size: 12px"
+              >Transaction ledger</span
+            >
+            <button class="btn primary" id="btnAddTxn">
+              + Add transaction
+            </button>
+          </div>
+          <div class="card" style="padding: 0; overflow: auto">
+            <table id="txnTable">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Skill</th>
+                  <th>Category</th>
+                  <th>Amount</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="txnBody"></tbody>
+            </table>
+          </div>
+          <div
+            class="empty"
+            id="txnEmpty"
+            style="display: none; margin-top: 14px"
+          >
+            <h4>No transactions yet</h4>
+            <p>Log a course purchase, subscription, or certification fee.</p>
+          </div>
+        </section>
+
+        <!-- ============ ANALYZE ============ -->
+        <section class="view" id="view-analyze">
+          <div class="page-head">
+            <div class="eyebrow">Gap Analysis</div>
+            <h1>Resume Analyzer</h1>
+            <p>
+              Paste your resume and a target job description. SkillForge
+              extracts matching and missing skills and scores your readiness.
+            </p>
+          </div>
+          <div class="grid grid-2">
+            <div class="card">
+              <div class="field">
+                <label>Resume text</label>
+                <textarea
+                  id="resumeText"
+                  placeholder="Paste resume content here — experience, projects, skills…"
+                ></textarea>
+              </div>
+              <div class="field">
+                <label>Target job description</label>
+                <textarea
+                  id="jdText"
+                  placeholder="Paste the job description you're targeting…"
+                ></textarea>
+              </div>
+              <button class="btn primary" id="btnAnalyze" style="width: 100%">
+                Analyze readiness
+              </button>
+              <div
+                id="analyzeError"
+                style="
+                  color: var(--danger);
+                  font-size: 12.5px;
+                  margin-top: 10px;
+                  display: none;
+                "
+              ></div>
+            </div>
+            <div
+              class="card"
+              id="analyzeResultCard"
+              style="display: flex; flex-direction: column"
+            >
+              <h3 style="margin-bottom: 12px">Result</h3>
+              <div
+                id="analyzeEmpty"
+                class="empty"
+                style="
+                  flex: 1;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                "
+              >
+                <h4>Nothing analyzed yet</h4>
+                <p>
+                  Run an analysis to see your readiness score and skill gaps
+                  here.
+                </p>
+              </div>
+              <div id="analyzeResult" style="display: none">
+                <div class="ring-wrap" style="margin-bottom: 16px">
+                  <div class="ring">
+                    <svg width="74" height="74" viewBox="0 0 74 74">
+                      <circle
+                        cx="37"
+                        cy="37"
+                        r="32"
+                        fill="none"
+                        stroke="var(--line)"
+                        stroke-width="7"
+                      />
+                      <circle
+                        id="ringProgress"
+                        cx="37"
+                        cy="37"
+                        r="32"
+                        fill="none"
+                        stroke="var(--teal)"
+                        stroke-width="7"
+                        stroke-linecap="round"
+                        stroke-dasharray="201"
+                        stroke-dashoffset="201"
+                      />
+                    </svg>
+                    <div class="ring-val mono" id="ringVal">0%</div>
+                  </div>
+                  <div>
+                    <div style="font-size: 13px; color: var(--text-lo)">
+                      Readiness score
+                    </div>
+                    <div
+                      style="
+                        font-size: 12px;
+                        color: var(--text-lo);
+                        margin-top: 2px;
+                      "
+                    >
+                      Analysis #<span id="analysisId">—</span>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  style="
+                    font-size: 12px;
+                    color: var(--text-lo);
+                    margin-bottom: 4px;
+                  "
+                >
+                  Matching skills
+                </div>
+                <div class="pill-row" id="matchPills"></div>
+                <div
+                  style="
+                    font-size: 12px;
+                    color: var(--text-lo);
+                    margin: 14px 0 4px;
+                  "
+                >
+                  Missing skills
+                </div>
+                <div class="pill-row" id="missPills"></div>
+                <button
+                  class="btn primary"
+                  id="btnGeneratePlan"
+                  style="width: 100%; margin-top: 20px"
+                >
+                  Generate learning plan from this
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ PLANS ============ -->
+        <section class="view" id="view-plans">
+          <div class="page-head">
+            <div class="eyebrow">Weekly Roadmap</div>
+            <h1>Learning Plans</h1>
+            <p>
+              Generated plans, sized to hours and budget, ready to export as a
+              deck.
+            </p>
+          </div>
+          <div
+            id="plansList"
+            class="grid"
+            style="grid-template-columns: 1fr"
+          ></div>
+          <div class="empty" id="plansEmpty" style="display: none">
+            <h4>No plans yet</h4>
+            <p>Run an analysis first, then generate a plan from the result.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Skill Modal -->
+    <div class="modal-bg" id="skillModalBg">
+      <div class="modal">
+        <h3 id="skillModalTitle">Add skill</h3>
+        <input type="hidden" id="skillId" />
+        <div class="field">
+          <label>Name</label
+          ><input id="skillName" placeholder="e.g. React, SQL, Docker" />
+        </div>
+        <div class="field">
+          <label>Category</label
+          ><input id="skillCategory" placeholder="e.g. Frontend, DevOps" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Current level (0–100)</label
+            ><input
+              id="skillCurrent"
+              type="number"
+              min="0"
+              max="100"
+              value="20"
+            />
+          </div>
+          <div class="field">
+            <label>Target level (0–100)</label
+            ><input
+              id="skillTarget"
+              type="number"
+              min="0"
+              max="100"
+              value="80"
+            />
+          </div>
+        </div>
+        <div class="field">
+          <label>Priority (1–5)</label
+          ><input id="skillPriority" type="number" min="1" max="5" value="3" />
+        </div>
+        <div class="field">
+          <label>Notes</label
+          ><textarea
+            id="skillNotes"
+            style="min-height: 60px; font-family: &quot;Inter&quot;"
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="btn ghost" id="skillCancel">Cancel</button>
+          <button class="btn primary" id="skillSave">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div class="modal-bg" id="txnModalBg">
+      <div class="modal">
+        <h3>Add transaction</h3>
+        <div class="field">
+          <label>Description</label
+          ><input id="txnDesc" placeholder="e.g. Udemy React course" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Amount (INR)</label
+            ><input
+              id="txnAmount"
+              type="number"
+              min="0"
+              step="0.01"
+              value="0"
+            />
+          </div>
+          <div class="field">
+            <label>Date</label><input id="txnDate" type="date" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Category</label><input id="txnCategory" value="learning" />
+          </div>
+          <div class="field">
+            <label>Linked skill</label
+            ><select id="txnSkill">
+              <option value="">None</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              cursor: pointer;
+            "
+          >
+            <input type="checkbox" id="txnRecurring" style="width: auto" />
+            Recurring monthly
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="btn ghost" id="txnCancel">Cancel</button>
+          <button class="btn primary" id="txnSave">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      /* ---------------- State / config ---------------- */
+      let API_BASE =
+        localStorage.getItem("sf_api_base") || window.location.origin;
+      document.getElementById("apiBaseInput").value = API_BASE;
+
+      let state = {
+        skills: [],
+        transactions: [],
+        analyses: [],
+        plans: [],
+        lastAnalysis: null,
+      };
+
+      /* ---------------- Utils ---------------- */
+      function toast(msg, isError = false) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = "toast show" + (isError ? " danger" : "");
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => t.classList.remove("show"), 3200);
+      }
+      function fmtINR(n) {
+        return (
+          "₹" +
+          Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })
+        );
+      }
+      async function api(path, opts = {}) {
+        const res = await fetch(API_BASE + path, {
+          headers: { "Content-Type": "application/json" },
+          ...opts,
+        });
+        if (!res.ok) {
+          let detail = res.statusText;
+          try {
+            const j = await res.json();
+            detail = j.detail || detail;
+          } catch (e) {}
+          throw new Error(detail);
+        }
+        if (res.status === 204) return null;
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) return res.json();
+        return res;
+      }
+
+      /* ---------------- Nav ---------------- */
+      document.querySelectorAll(".nav-item").forEach((btn) => {
+        btn.addEventListener("click", () => switchView(btn.dataset.view));
+      });
+      document.querySelectorAll("[data-view-link]").forEach((btn) => {
+        btn.addEventListener("click", () => switchView(btn.dataset.viewLink));
+      });
+      function switchView(name) {
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((b) =>
+            b.classList.toggle("active", b.dataset.view === name),
+          );
+        document
+          .querySelectorAll(".view")
+          .forEach((v) =>
+            v.classList.toggle("active", v.id === "view-" + name),
+          );
+        if (name === "skills") loadSkills();
+        if (name === "finance") loadTransactions();
+        if (name === "plans") loadPlans();
+        if (name === "home") loadHomeStats();
+      }
+
+      /* ---------------- API base / connection check ---------------- */
+      const apiBaseInput = document.getElementById("apiBaseInput");
+      apiBaseInput.addEventListener("change", () => {
+        API_BASE =
+          apiBaseInput.value.trim().replace(/\/$/, "") ||
+          window.location.origin;
+        localStorage.setItem("sf_api_base", API_BASE);
+        checkConnection();
+      });
+      async function checkConnection() {
+        const dot = document.getElementById("apiDot");
+        const txt = document.getElementById("apiStatusText");
+        try {
+          await api("/health");
+          dot.classList.add("ok");
+          txt.textContent = "connected";
+          loadHomeStats();
+        } catch (e) {
+          dot.classList.remove("ok");
+          txt.textContent = "offline — check API base";
+        }
+      }
+
+      /* ---------------- HOME ---------------- */
+      async function loadHomeStats() {
+        try {
+          const skills = await api("/skills/");
+          state.skills = skills;
+          document.getElementById("statSkills").textContent = skills.length;
+        } catch (e) {
+          document.getElementById("statSkills").textContent = "—";
+        }
+        try {
+          const txns = await api("/transactions/");
+          state.transactions = txns;
+          const total = txns.reduce((s, t) => s + Number(t.amount || 0), 0);
+          document.getElementById("statSpend").textContent = fmtINR(total);
+        } catch (e) {
+          document.getElementById("statSpend").textContent = "—";
+        }
+        try {
+          const analyses = await api("/analyze/?limit=1");
+          if (analyses.length) {
+            const score = Math.round(analyses[0].readiness_score);
+            document.getElementById("statScoreWrap").innerHTML =
+              `<span class="mono">${score}%</span>`;
+          } else {
+            document.getElementById("statScoreWrap").textContent = "No data";
+          }
+        } catch (e) {
+          document.getElementById("statScoreWrap").textContent = "—";
+        }
+      }
+
+      /* ---------------- SKILLS ---------------- */
+      async function loadSkills() {
+        try {
+          const skills = await api("/skills/");
+          state.skills = skills;
+          renderSkills();
+        } catch (e) {
+          toast("Could not load skills: " + e.message, true);
+        }
+      }
+      function renderSkills() {
+        const body = document.getElementById("skillsBody");
+        const empty = document.getElementById("skillsEmpty");
+        document.getElementById("skillCount").textContent =
+          state.skills.length + " skills";
+        if (!state.skills.length) {
+          body.innerHTML = "";
+          empty.style.display = "block";
+          return;
+        }
+        empty.style.display = "none";
+        body.innerHTML = state.skills
+          .map(
+            (s) => `
+    <tr>
+      <td><strong>${escapeHtml(s.name)}</strong>${s.notes ? `<div style="font-size:11.5px;color:var(--text-lo);margin-top:2px;">${escapeHtml(s.notes)}</div>` : ""}</td>
+      <td>${s.category ? `<span class="badge">${escapeHtml(s.category)}</span>` : '<span style="color:var(--text-lo)">—</span>'}</td>
+      <td style="min-width:140px;">
+        <div class="mono" style="font-size:12px;">${s.current_level} / ${s.target_level}</div>
+        <div class="skill-bar-track"><div class="skill-bar-fill" style="width:${Math.min(100, (s.current_level / Math.max(s.target_level, 1)) * 100)}%"></div></div>
+      </td>
+      <td><span class="badge gold">P${s.priority}</span></td>
+      <td style="text-align:right;white-space:nowrap;">
+        <button class="btn small ghost" onclick="editSkill(${s.id})">Edit</button>
+        <button class="btn danger" onclick="deleteSkill(${s.id})" title="Delete">✕</button>
+      </td>
+    </tr>
+  `,
+          )
+          .join("");
+      }
+      function escapeHtml(str) {
+        return String(str).replace(
+          /[&<>"']/g,
+          (m) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[m],
+        );
+      }
+
+      const skillModalBg = document.getElementById("skillModalBg");
+      document
+        .getElementById("btnAddSkill")
+        .addEventListener("click", () => openSkillModal());
+      document
+        .getElementById("skillCancel")
+        .addEventListener("click", () =>
+          skillModalBg.classList.remove("active"),
+        );
+      function openSkillModal(skill = null) {
+        document.getElementById("skillModalTitle").textContent = skill
+          ? "Edit skill"
+          : "Add skill";
+        document.getElementById("skillId").value = skill ? skill.id : "";
+        document.getElementById("skillName").value = skill ? skill.name : "";
+        document.getElementById("skillCategory").value = skill
+          ? skill.category || ""
+          : "";
+        document.getElementById("skillCurrent").value = skill
+          ? skill.current_level
+          : 20;
+        document.getElementById("skillTarget").value = skill
+          ? skill.target_level
+          : 80;
+        document.getElementById("skillPriority").value = skill
+          ? skill.priority
+          : 3;
+        document.getElementById("skillNotes").value = skill
+          ? skill.notes || ""
+          : "";
+        skillModalBg.classList.add("active");
+      }
+      function editSkill(id) {
+        const s = state.skills.find((x) => x.id === id);
+        if (s) openSkillModal(s);
+      }
+      async function deleteSkill(id) {
+        if (
+          !confirm("Delete this skill? This also removes linked transactions.")
+        )
+          return;
+        try {
+          await api("/skills/" + id, { method: "DELETE" });
+          toast("Skill deleted");
+          loadSkills();
+        } catch (e) {
+          toast("Delete failed: " + e.message, true);
+        }
+      }
+      document
+        .getElementById("skillSave")
+        .addEventListener("click", async () => {
+          const id = document.getElementById("skillId").value;
+          const payload = {
+            name: document.getElementById("skillName").value.trim(),
+            category:
+              document.getElementById("skillCategory").value.trim() || null,
+            current_level: Number(
+              document.getElementById("skillCurrent").value,
+            ),
+            target_level: Number(document.getElementById("skillTarget").value),
+            priority: Number(document.getElementById("skillPriority").value),
+            notes: document.getElementById("skillNotes").value.trim() || null,
+          };
+          if (!payload.name) {
+            toast("Skill name is required", true);
+            return;
+          }
+          try {
+            if (id)
+              await api("/skills/" + id, {
+                method: "PUT",
+                body: JSON.stringify(payload),
+              });
+            else
+              await api("/skills/", {
+                method: "POST",
+                body: JSON.stringify(payload),
+              });
+            toast("Skill saved");
+            skillModalBg.classList.remove("active");
+            loadSkills();
+          } catch (e) {
+            toast("Save failed: " + e.message, true);
+          }
+        });
+
+      /* ---------------- FINANCE ---------------- */
+      async function loadTransactions() {
+        try {
+          const [txns, skills] = await Promise.all([
+            api("/transactions/"),
+            api("/skills/"),
+          ]);
+          state.transactions = txns;
+          state.skills = skills;
+          renderTransactions();
+          populateSkillSelect();
+        } catch (e) {
+          toast("Could not load transactions: " + e.message, true);
+        }
+      }
+      function renderTransactions() {
+        const body = document.getElementById("txnBody");
+        const empty = document.getElementById("txnEmpty");
+        const total = state.transactions.reduce(
+          (s, t) => s + Number(t.amount || 0),
+          0,
+        );
+        const recurring = state.transactions
+          .filter((t) => t.is_recurring)
+          .reduce((s, t) => s + Number(t.amount || 0), 0);
+        document.getElementById("finTotal").textContent = fmtINR(total);
+        document.getElementById("finCount").textContent =
+          state.transactions.length;
+        document.getElementById("finRecurring").textContent = fmtINR(recurring);
+        if (!state.transactions.length) {
+          body.innerHTML = "";
+          empty.style.display = "block";
+          return;
+        }
+        empty.style.display = "none";
+        body.innerHTML = state.transactions
+          .map((t) => {
+            const skill = state.skills.find((s) => s.id === t.skill_id);
+            return `<tr>
+      <td class="mono" style="color:var(--text-lo);">${t.txn_date}</td>
+      <td>${escapeHtml(t.description)}${t.is_recurring ? ' <span class="badge">recurring</span>' : ""}</td>
+      <td>${skill ? escapeHtml(skill.name) : '<span style="color:var(--text-lo)">—</span>'}</td>
+      <td><span class="badge gold">${escapeHtml(t.category)}</span></td>
+      <td class="amt">${fmtINR(t.amount)}</td>
+      <td style="text-align:right;"><button class="btn danger" onclick="deleteTxn(${t.id})">✕</button></td>
+    </tr>`;
+          })
+          .join("");
+      }
+      function populateSkillSelect() {
+        const sel = document.getElementById("txnSkill");
+        sel.innerHTML =
+          '<option value="">None</option>' +
+          state.skills
+            .map(
+              (s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`,
+            )
+            .join("");
+      }
+      const txnModalBg = document.getElementById("txnModalBg");
+      document.getElementById("btnAddTxn").addEventListener("click", () => {
+        document.getElementById("txnDesc").value = "";
+        document.getElementById("txnAmount").value = "";
+        document.getElementById("txnDate").value = new Date()
+          .toISOString()
+          .slice(0, 10);
+        document.getElementById("txnCategory").value = "learning";
+        document.getElementById("txnRecurring").checked = false;
+        populateSkillSelect();
+        txnModalBg.classList.add("active");
+      });
+      document
+        .getElementById("txnCancel")
+        .addEventListener("click", () => txnModalBg.classList.remove("active"));
+      document.getElementById("txnSave").addEventListener("click", async () => {
+        const payload = {
+          description: document.getElementById("txnDesc").value.trim(),
+          amount: Number(document.getElementById("txnAmount").value),
+          currency: "INR",
+          category:
+            document.getElementById("txnCategory").value.trim() || "learning",
+          txn_date:
+            document.getElementById("txnDate").value ||
+            new Date().toISOString().slice(0, 10),
+          is_recurring: document.getElementById("txnRecurring").checked,
+          skill_id: document.getElementById("txnSkill").value
+            ? Number(document.getElementById("txnSkill").value)
+            : null,
+        };
+        if (!payload.description || !(payload.amount > 0)) {
+          toast("Description and amount are required", true);
+          return;
+        }
+        try {
+          await api("/transactions/", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          toast("Transaction added");
+          txnModalBg.classList.remove("active");
+          loadTransactions();
+        } catch (e) {
+          toast("Save failed: " + e.message, true);
+        }
+      });
+      async function deleteTxn(id) {
+        if (!confirm("Delete this transaction?")) return;
+        try {
+          await api("/transactions/" + id, { method: "DELETE" });
+          toast("Transaction deleted");
+          loadTransactions();
+        } catch (e) {
+          toast("Delete failed: " + e.message, true);
+        }
+      }
+
+      /* ---------------- ANALYZE ---------------- */
+      document
+        .getElementById("btnAnalyze")
+        .addEventListener("click", async () => {
+          const resume_text = document
+            .getElementById("resumeText")
+            .value.trim();
+          const job_description = document
+            .getElementById("jdText")
+            .value.trim();
+          const errEl = document.getElementById("analyzeError");
+          errEl.style.display = "none";
+          if (resume_text.length < 50 || job_description.length < 50) {
+            errEl.textContent =
+              "Both resume and job description need at least 50 characters.";
+            errEl.style.display = "block";
+            return;
+          }
+          const btn = document.getElementById("btnAnalyze");
+          btn.disabled = true;
+          btn.textContent = "Analyzing…";
+          try {
+            const result = await api("/analyze/", {
+              method: "POST",
+              body: JSON.stringify({ resume_text, job_description }),
+            });
+            state.lastAnalysis = result;
+            renderAnalysis(result);
+            toast("Analysis complete");
+          } catch (e) {
+            errEl.textContent = "Analysis failed: " + e.message;
+            errEl.style.display = "block";
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Analyze readiness";
+          }
+        });
+      function renderAnalysis(result) {
+        document.getElementById("analyzeEmpty").style.display = "none";
+        document.getElementById("analyzeResult").style.display = "block";
+        const score = Math.round(result.readiness_score);
+        document.getElementById("ringVal").textContent = score + "%";
+        document.getElementById("analysisId").textContent = result.id;
+        const circumference = 201;
+        const offset =
+          circumference - (circumference * Math.min(score, 100)) / 100;
+        document.getElementById("ringProgress").style.strokeDashoffset = offset;
+
+        const extracted = result.extracted_skills || {};
+        const matching = extracted.matching_skills || [];
+        const missing = extracted.missing_skills || [];
+        document.getElementById("matchPills").innerHTML = matching.length
+          ? matching
+              .map((s) => `<span class="pill match">${escapeHtml(s)}</span>`)
+              .join("")
+          : '<span style="color:var(--text-lo);font-size:12px;">None found</span>';
+        document.getElementById("missPills").innerHTML = missing.length
+          ? missing
+              .map((s) => `<span class="pill miss">${escapeHtml(s)}</span>`)
+              .join("")
+          : '<span style="color:var(--text-lo);font-size:12px;">None — great match!</span>';
+      }
+      document
+        .getElementById("btnGeneratePlan")
+        .addEventListener("click", async () => {
+          if (!state.lastAnalysis) return;
+          const btn = document.getElementById("btnGeneratePlan");
+          btn.disabled = true;
+          btn.textContent = "Generating…";
+          try {
+            await api("/plan/generate/" + state.lastAnalysis.id, {
+              method: "POST",
+            });
+            toast("Plan generated");
+            switchView("plans");
+          } catch (e) {
+            toast("Plan generation failed: " + e.message, true);
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Generate learning plan from this";
+          }
+        });
+
+      /* ---------------- PLANS ---------------- */
+      async function loadPlans() {
+        try {
+          const plans = await api("/plan/?limit=20");
+          state.plans = plans;
+          renderPlans();
+        } catch (e) {
+          toast("Could not load plans: " + e.message, true);
+        }
+      }
+      function renderPlans() {
+        const list = document.getElementById("plansList");
+        const empty = document.getElementById("plansEmpty");
+        if (!state.plans.length) {
+          list.innerHTML = "";
+          empty.style.display = "block";
+          return;
+        }
+        empty.style.display = "none";
+        list.innerHTML = state.plans
+          .map((p) => {
+            let weeks = [];
+            try {
+              const parsed = JSON.parse(p.plan_json);
+              weeks = parsed.weeks || parsed.plan || [];
+            } catch (e) {}
+            return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div>
+          <h3 style="text-transform:none;font-size:16px;color:var(--text-hi);font-family:'Space Grotesk';">${escapeHtml(p.title)}</h3>
+          <div style="color:var(--text-lo);font-size:12.5px;margin-top:4px;">${p.week_number} week${p.week_number != 1 ? "s" : ""} · ${p.total_hours}h total · created ${new Date(p.created_at).toLocaleDateString()}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="mono stat gold" style="font-size:18px;">${fmtINR(p.recommended_budget)}</div>
+          <a href="${API_BASE}/plan/${p.id}/export" class="btn small primary" style="display:inline-block;margin-top:6px;text-decoration:none;">Export PPTX</a>
+        </div>
+      </div>
+      ${
+        Array.isArray(weeks) && weeks.length
+          ? `
+        <div style="margin-top:14px;display:grid;gap:8px;">
+          ${weeks
+            .slice(0, 6)
+            .map(
+              (w, i) => `
+            <div style="border-top:1px solid var(--line);padding-top:8px;font-size:12.5px;">
+              <strong>Week ${w.week || i + 1}:</strong> ${escapeHtml(w.focus || w.title || w.topic || "")}
+            </div>`,
+            )
+            .join("")}
+        </div>`
+          : ""
+      }
+    </div>`;
+          })
+          .join("");
+      }
+
+      /* ---------------- Init ---------------- */
+      checkConnection();
+      document.getElementById("txnDate").value = new Date()
+        .toISOString()
+        .slice(0, 10);
+    </script>
+  </body>
+</html>
