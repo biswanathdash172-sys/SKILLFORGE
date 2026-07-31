@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"unabyss": {
+			"type": "http",
+			"url": "https://mcp.unabyss.com/"
+		}
+	},
+	"inputs": []
+}
