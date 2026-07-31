@@ -1,11 +1,17 @@
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.database import engine, Base, get_settings
 from app.schemas import HealthCheck
 from app.routers import skills, transactions, analyze, plan
 
 settings = get_settings()
+
+# backend/app/main.py -> backend/app -> backend -> skillforge -> skillforge/frontend
+FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
 
 
 @asynccontextmanager
@@ -38,8 +44,8 @@ app.add_middleware(
 )
 
 
-@app.get("/", response_model=HealthCheck)
-def root():
+@app.get("/api/status", response_model=HealthCheck)
+def api_status():
     return HealthCheck(status="ok", app="SkillForge", version="0.1.0")
 
 
@@ -53,3 +59,16 @@ app.include_router(skills.router)
 app.include_router(transactions.router)
 app.include_router(analyze.router)
 app.include_router(plan.router)
+
+
+# ---------------------------------------------------------------------------
+# Serve the frontend (single-file HTML app) from the same process/port.
+# Registered LAST so it never shadows the API routes above.
+# ---------------------------------------------------------------------------
+@app.get("/")
+def serve_frontend():
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+if (FRONTEND_DIR / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
