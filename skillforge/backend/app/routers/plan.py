@@ -51,36 +51,6 @@ def generate_plan_from_analysis(analysis_id: int, db: Session = Depends(get_db))
         created_at=plan.created_at,
     )
 
-@router.get("/{plan_id}/export")
-def export_plan_pptx(plan_id: int, db: Session = Depends(get_db)):
-    """
-    One-click download of the learning plan as a professional PPTX.
-    """
-    plan = db.query(models.LearningPlan).filter(models.LearningPlan.id == plan_id).first()
-    if not plan:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
-
-    try:
-        buffer = create_plan_pptx(plan)
-        content = buffer.getvalue()
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate PPTX: {str(e)}",
-        )
-
-    filename = f"SkillForge_Plan_{plan_id}.pptx"
-
-    from fastapi.responses import Response
-    return Response(
-        content=content,
-        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": str(len(content)),
-        },
-    )
-
 
 @router.get("/", response_model=List[schemas.LearningPlanRead])
 def list_plans(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
@@ -93,6 +63,14 @@ def list_plans(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/{plan_id}", response_model=schemas.LearningPlanRead)
+def get_plan(plan_id: int, db: Session = Depends(get_db)):
+    plan = db.query(models.LearningPlan).filter(models.LearningPlan.id == plan_id).first()
+    if not plan:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
+    return plan
+
+
 @router.get("/{plan_id}/export")
 def export_plan_pptx(plan_id: int, db: Session = Depends(get_db)):
     """
@@ -102,7 +80,13 @@ def export_plan_pptx(plan_id: int, db: Session = Depends(get_db)):
     if not plan:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
 
-    buffer = create_plan_pptx(plan)
+    try:
+        buffer = create_plan_pptx(plan)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate PPTX: {str(e)}",
+        )
 
     filename = f"SkillForge_Plan_{plan_id}.pptx"
     return StreamingResponse(

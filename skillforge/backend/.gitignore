@@ -1,0 +1,26 @@
+# Environment secrets — NEVER commit real keys
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# Database
+*.db
+*.sqlite3
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/mcp.json
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
