@@ -20,7 +20,7 @@ SkillForge helps engineering students answer three questions:
 | Transparent readiness scoring               | ✅ Done        |
 | Weekly learning plan generator              | ✅ Done        |
 | PPTX one-click export                       | ✅ Done        |
-| Frontend dashboard (HTML/Tailwind/Chart.js) | ❌ Not started |
+| Frontend dashboard (HTML/Tailwind/Chart.js) | Demo is done    |
 
 ## Tech Stack
 
@@ -54,7 +54,7 @@ skillforge/
 │   │       └── plan.py
 │   ├── requirements.txt
 │   └── .env.example
-├── frontend/           # not yet built
+├── frontend/           # demo is there
 │   ├── index.html
 │   ├── css/
 │   ├── js/
@@ -100,5 +100,4 @@ API docs available at `http://127.0.0.1:8000/docs` once running.
 
 ## Contributing / Working Notes
 
-See `LEARNINGS.md` for a running log of what was learned in each development phase.
 
