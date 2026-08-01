@@ -98,7 +98,10 @@
       <div class="card section-gap">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
           <h3 style="margin:0; font-size:15px;">${escapeHtml(plan.title)}</h3>
-          <a class="btn secondary" href="${API_BASE}/plan/${plan.id}/export" target="_blank">⬇ Export as PPTX</a>
+          <div style="display:flex; gap:8px;">
+            <a class="btn secondary" href="${API_BASE}/plan/${plan.id}/export" target="_blank">⬇ Export as PPTX</a>
+            <button class="btn danger" onclick="deletePlan(${plan.id})">🗑 Delete plan</button>
+          </div>
         </div>
         ${weeks
           .map(
