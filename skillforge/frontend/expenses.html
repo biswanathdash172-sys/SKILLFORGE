@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expenses — SkillForge</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <div id="sidebar-mount" data-active="expenses"></div>
+
+      <main>
+        <p class="eyebrow">Spend</p>
+        <h1 class="page-title">Learning Expenses</h1>
+        <p class="page-sub">
+          Log what you spend on courses, books, and subscriptions — linked to
+          the skill it's building.
+        </p>
+
+        <div class="grid-3 section-gap">
+          <div class="card">
+            <p class="stat-label">Total spent</p>
+            <p class="stat-value" id="stat-total">₹0</p>
+          </div>
+          <div class="card">
+            <p class="stat-label">This month</p>
+            <p class="stat-value" id="stat-month">₹0</p>
+          </div>
+          <div class="card">
+            <p class="stat-label">Entries logged</p>
+            <p class="stat-value" id="stat-count">0</p>
+          </div>
+        </div>
+
+        <div
+          class="grid-2 section-gap"
+          style="grid-template-columns: 340px 1fr; align-items: start"
+        >
+          <div class="card">
+            <h3 style="margin-top: 0; font-size: 15px">Log an expense</h3>
+            <form id="txn-form">
+              <div class="field">
+                <label for="t-desc">Description</label>
+                <input
+                  id="t-desc"
+                  placeholder="e.g. Udemy Docker course"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="t-amount">Amount (₹)</label>
+                <input id="t-amount" type="number" min="0" step="1" required />
+              </div>
+              <div class="field">
+                <label for="t-skill">Linked skill</label>
+                <select id="t-skill">
+                  <option value="">— none —</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="t-date">Date</label>
+                <input id="t-date" type="date" />
+              </div>
+              <button
+                class="btn"
+                type="submit"
+                style="width: 100%; justify-content: center"
+              >
+                Add expense
+              </button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-top: 0; font-size: 15px">Spend by skill</h3>
+            <canvas id="spend-chart" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 0">
+          <div id="txn-list" style="padding: 22px">
+            <p class="empty">Loading…</p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script>
+      let skills = [];
+      let txns = [];
+      let chart = null;
+
+      async function loadAll() {
+        try {
+          [skills, txns] = await Promise.all([
+            apiRequest("/skills/"),
+            apiRequest("/transactions/"),
+          ]);
+          populateSkillSelect();
+          renderStats();
+          renderTable();
+          renderChart();
+        } catch (e) {
+          document.getElementById("txn-list").innerHTML =
+            `<p class="empty">Couldn't reach the backend. Is it running at http://127.0.0.1:8000?</p>`;
+        }
+      }
+
+      function populateSkillSelect() {
+        const sel = document.getElementById("t-skill");
+        sel.innerHTML =
+          `<option value="">— none —</option>` +
+          skills
+            .map(
+              (s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`,
+            )
+            .join("");
+      }
+
+      function renderStats() {
+        const total = txns.reduce((sum, t) => sum + t.amount, 0);
+        const now = new Date();
+        const monthTotal = txns
+          .filter((t) => {
+            const d = new Date(t.txn_date);
+            return (
+              d.getMonth() === now.getMonth() &&
+              d.getFullYear() === now.getFullYear()
+            );
+          })
+          .reduce((sum, t) => sum + t.amount, 0);
+
+        document.getElementById("stat-total").textContent = fmtCurrency(total);
+        document.getElementById("stat-month").textContent =
+          fmtCurrency(monthTotal);
+        document.getElementById("stat-count").textContent = txns.length;
+      }
+
+      function skillName(id) {
+        const s = skills.find((sk) => sk.id === id);
+        return s ? s.name : "Unlinked";
+      }
+
+      function renderTable() {
+        const list = document.getElementById("txn-list");
+        if (!txns.length) {
+          list.innerHTML = `<p class="empty">No expenses logged yet.</p>`;
+          return;
+        }
+        const rows = txns
+          .map(
+            (t) => `
+      <tr>
+        <td><strong>${escapeHtml(t.description)}</strong></td>
+        <td>${escapeHtml(skillName(t.skill_id))}</td>
+        <td>${fmtDate(t.txn_date)}</td>
+        <td>${fmtCurrency(t.amount)}</td>
+        <td style="text-align:right;">
+          <button class="btn outline" style="padding:6px 12px; font-size:12.5px;" onclick="deleteTxn(${t.id})">Delete</button>
+        </td>
+      </tr>`,
+          )
+          .join("");
+
+        list.innerHTML = `
+      <table>
+        <thead><tr><th>Description</th><th>Skill</th><th>Date</th><th>Amount</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+      }
+
+      function renderChart() {
+        const totals = {};
+        txns.forEach((t) => {
+          const name = skillName(t.skill_id);
+          totals[name] = (totals[name] || 0) + t.amount;
+        });
+        const labels = Object.keys(totals);
+        const data = Object.values(totals);
+
+        const ctx = document.getElementById("spend-chart");
+        if (chart) chart.destroy();
+        if (!labels.length) return;
+
+        chart = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels,
+            datasets: [
+              {
+                data,
+                backgroundColor: [
+                  "#0F9D8C",
+                  "#0B1729",
+                  "#5EEAD4",
+                  "#94A3B8",
+                  "#DC2626",
+                  "#2563EB",
+                ],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { font: { family: "Inter", size: 12 } },
+              },
+            },
+          },
+        });
+      }
+
+      async function deleteTxn(id) {
+        if (!confirm("Delete this expense?")) return;
+        try {
+          await apiRequest(`/transactions/${id}`, { method: "DELETE" });
+          showToast("Expense deleted");
+          loadAll();
+        } catch (e) {
+          showToast(e.message, true);
+        }
+      }
+
+      document
+        .getElementById("txn-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const payload = {
+            description: document.getElementById("t-desc").value.trim(),
+            amount: Number(document.getElementById("t-amount").value),
+            skill_id: document.getElementById("t-skill").value
+              ? Number(document.getElementById("t-skill").value)
+              : null,
+            txn_date:
+              document.getElementById("t-date").value ||
+              new Date().toISOString().slice(0, 10),
+          };
+          try {
+            await apiRequest("/transactions/", {
+              method: "POST",
+              body: JSON.stringify(payload),
+            });
+            showToast("Expense added");
+            e.target.reset();
+            loadAll();
+          } catch (err) {
+            showToast(err.message, true);
+          }
+        });
+
+      loadAll();
+    </script>
+  </body>
+</html>

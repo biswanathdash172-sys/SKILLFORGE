@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skills — SkillForge</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <div id="sidebar-mount" data-active="skills"></div>
+
+      <main>
+        <p class="eyebrow">Track</p>
+        <h1 class="page-title">Skills</h1>
+        <p class="page-sub">
+          Add the skills you're working toward. Each one can later be linked to
+          expenses and to your readiness score.
+        </p>
+
+        <div
+          class="grid-2 section-gap"
+          style="grid-template-columns: 340px 1fr; align-items: start"
+        >
+          <div class="card">
+            <h3 style="margin-top: 0; font-size: 15px">Add a skill</h3>
+            <form id="skill-form">
+              <div class="field">
+                <label for="s-name">Skill name</label>
+                <input id="s-name" placeholder="e.g. Docker" required />
+              </div>
+              <div class="field">
+                <label for="s-category">Category</label>
+                <input id="s-category" placeholder="e.g. DevOps" />
+              </div>
+              <div class="field">
+                <label for="s-current">Current level (0–100)</label>
+                <input
+                  id="s-current"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="0"
+                />
+              </div>
+              <div class="field">
+                <label for="s-target">Target level (0–100)</label>
+                <input
+                  id="s-target"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="80"
+                />
+              </div>
+              <div class="field">
+                <label for="s-priority"
+                  >Priority (1 = highest, 5 = lowest)</label
+                >
+                <input
+                  id="s-priority"
+                  type="number"
+                  min="1"
+                  max="5"
+                  value="3"
+                />
+              </div>
+              <button
+                class="btn"
+                type="submit"
+                style="width: 100%; justify-content: center"
+              >
+                Add skill
+              </button>
+            </form>
+          </div>
+
+          <div class="card" style="padding: 0">
+            <div id="skills-list" style="padding: 22px">
+              <p class="empty">Loading…</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script>
+      let skills = [];
+
+      async function loadSkills() {
+        const list = document.getElementById("skills-list");
+        try {
+          skills = await apiRequest("/skills/");
+          renderSkills();
+        } catch (e) {
+          list.innerHTML = `<p class="empty">Couldn't reach the backend. Is it running at http://127.0.0.1:8000?</p>`;
+        }
+      }
+
+      function renderSkills() {
+        const list = document.getElementById("skills-list");
+        if (!skills.length) {
+          list.innerHTML = `<p class="empty">No skills yet — add your first one on the left.</p>`;
+          return;
+        }
+        const rows = skills
+          .map(
+            (s) => `
+      <tr>
+        <td><strong>${escapeHtml(s.name)}</strong>${s.category ? `<br/><span style="color:var(--muted); font-size:12px;">${escapeHtml(s.category)}</span>` : ""}</td>
+        <td>${s.current_level} / ${s.target_level}</td>
+        <td><span class="badge ${s.priority <= 2 ? "warn" : ""}">P${s.priority}</span></td>
+        <td style="text-align:right;">
+          <button class="btn outline" style="padding:6px 12px; font-size:12.5px;" onclick="deleteSkill(${s.id})">Delete</button>
+        </td>
+      </tr>`,
+          )
+          .join("");
+
+        list.innerHTML = `
+      <table>
+        <thead><tr><th>Skill</th><th>Level (current / target)</th><th>Priority</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+      }
+
+      async function deleteSkill(id) {
+        if (
+          !confirm("Delete this skill? Related expenses will also be removed.")
+        )
+          return;
+        try {
+          await apiRequest(`/skills/${id}`, { method: "DELETE" });
+          showToast("Skill deleted");
+          loadSkills();
+        } catch (e) {
+          showToast(e.message, true);
+        }
+      }
+
+      document
+        .getElementById("skill-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const payload = {
+            name: document.getElementById("s-name").value.trim(),
+            category:
+              document.getElementById("s-category").value.trim() || null,
+            current_level: Number(document.getElementById("s-current").value),
+            target_level: Number(document.getElementById("s-target").value),
+            priority: Number(document.getElementById("s-priority").value),
+          };
+          try {
+            await apiRequest("/skills/", {
+              method: "POST",
+              body: JSON.stringify(payload),
+            });
+            showToast(`"${payload.name}" added`);
+            e.target.reset();
+            document.getElementById("s-current").value = 0;
+            document.getElementById("s-target").value = 80;
+            document.getElementById("s-priority").value = 3;
+            loadSkills();
+          } catch (err) {
+            showToast(err.message, true);
+          }
+        });
+
+      loadSkills();
+    </script>
+  </body>
+</html>

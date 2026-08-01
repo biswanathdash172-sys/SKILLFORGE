@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weekly Plan — SkillForge</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <div id="sidebar-mount" data-active="plan"></div>
+
+      <main>
+        <p class="eyebrow">Execute</p>
+        <h1 class="page-title">Weekly Learning Plan</h1>
+        <p class="page-sub">
+          Generate a study plan + budget from one of your analyses, then export
+          it as a slide deck.
+        </p>
+
+        <div class="card section-gap">
+          <div
+            style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap"
+          >
+            <div
+              class="field"
+              style="flex: 1; min-width: 220px; margin-bottom: 0"
+            >
+              <label for="analysis-select">Based on analysis</label>
+              <select id="analysis-select"></select>
+            </div>
+            <button class="btn" id="generate-btn">Generate plan</button>
+          </div>
+        </div>
+
+        <div id="plan-content"></div>
+
+        <div class="card" style="padding: 0; margin-top: 24px">
+          <div style="padding: 22px 22px 0 22px">
+            <h3 style="margin: 0; font-size: 15px">Past plans</h3>
+          </div>
+          <div id="plans-list" style="padding: 22px">
+            <p class="empty">Loading…</p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script>
+      async function loadAnalyses() {
+        const sel = document.getElementById("analysis-select");
+        try {
+          const items = await apiRequest("/analyze/?limit=20");
+          if (!items.length) {
+            sel.innerHTML = `<option value="">No analyses yet — run one on the Gap Analysis page first</option>`;
+            return;
+          }
+          sel.innerHTML = items
+            .map(
+              (a) =>
+                `<option value="${a.id}">#${a.id} — Score ${a.readiness_score}/100 — ${fmtDate(a.created_at)}</option>`,
+            )
+            .join("");
+
+          const params = new URLSearchParams(location.search);
+          const preselect = params.get("analysis_id");
+          if (preselect) sel.value = preselect;
+        } catch (e) {
+          sel.innerHTML = `<option value="">Couldn't reach backend</option>`;
+        }
+      }
+
+      function renderPlan(plan) {
+        const data = JSON.parse(plan.plan_json);
+        const weeks = data.weekly_plan || [];
+        const tips = data.tips || [];
+
+        document.getElementById("plan-content").innerHTML = `
+      <div class="grid-3 section-gap">
+        <div class="card">
+          <p class="stat-label">Duration</p>
+          <p class="stat-value">${plan.week_number}<span style="font-size:14px; color:var(--muted);"> weeks</span></p>
+        </div>
+        <div class="card">
+          <p class="stat-label">Total hours</p>
+          <p class="stat-value">${plan.total_hours}<span style="font-size:14px; color:var(--muted);"> hrs</span></p>
+        </div>
+        <div class="card">
+          <p class="stat-label">Recommended budget</p>
+          <p class="stat-value">${fmtCurrency(plan.recommended_budget)}</p>
+        </div>
+      </div>
+
+      <div class="card section-gap">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3 style="margin:0; font-size:15px;">${escapeHtml(plan.title)}</h3>
+          <a class="btn secondary" href="${API_BASE}/plan/${plan.id}/export" target="_blank">⬇ Export as PPTX</a>
+        </div>
+        ${weeks
+          .map(
+            (w) => `
+          <div style="border-top:1px solid var(--border); padding:14px 0;">
+            <div style="display:flex; justify-content:space-between;">
+              <strong>Week ${w.week}: ${escapeHtml(w.focus_skill)}</strong>
+              <span style="color:var(--muted); font-size:12.5px;">${w.daily_hours} hrs/day · ${fmtCurrency(w.estimated_cost_inr)}</span>
+            </div>
+            <ul style="margin:8px 0 0 18px; padding:0; font-size:13px; color:var(--muted);">
+              ${(w.tasks || []).map((t) => `<li>${escapeHtml(t)}</li>`).join("")}
+            </ul>
+          </div>`,
+          )
+          .join("")}
+        ${
+          tips.length
+            ? `
+          <div style="border-top:1px solid var(--border); padding-top:14px; margin-top:6px;">
+            <p class="stat-label" style="margin-bottom:8px;">Tips</p>
+            <ul style="margin:0 0 0 18px; padding:0; font-size:13px; color:var(--muted);">
+              ${tips.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}
+            </ul>
+          </div>`
+            : ""
+        }
+      </div>
+    `;
+      }
+
+      document
+        .getElementById("generate-btn")
+        .addEventListener("click", async () => {
+          const analysisId = document.getElementById("analysis-select").value;
+          if (!analysisId) {
+            showToast("Pick an analysis first", true);
+            return;
+          }
+          const btn = document.getElementById("generate-btn");
+          btn.disabled = true;
+          btn.innerHTML = `<span class="spinner"></span> Generating…`;
+          try {
+            const plan = await apiRequest(`/plan/generate/${analysisId}`, {
+              method: "POST",
+            });
+            renderPlan(plan);
+            showToast("Plan generated");
+            loadPlans();
+          } catch (e) {
+            showToast(e.message, true);
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Generate plan";
+          }
+        });
+
+      async function loadPlans() {
+        const list = document.getElementById("plans-list");
+        try {
+          const plans = await apiRequest("/plan/?limit=10");
+          if (!plans.length) {
+            list.innerHTML = `<p class="empty">No plans generated yet.</p>`;
+            return;
+          }
+          list.innerHTML = `
+        <table>
+          <thead><tr><th>Title</th><th>Weeks</th><th>Budget</th><th>Created</th><th></th></tr></thead>
+          <tbody>
+            ${plans
+              .map(
+                (p) => `
+              <tr>
+                <td><strong>${escapeHtml(p.title)}</strong></td>
+                <td>${p.week_number}</td>
+                <td>${fmtCurrency(p.recommended_budget)}</td>
+                <td>${fmtDate(p.created_at)}</td>
+                <td style="text-align:right;"><a class="btn outline" style="padding:6px 12px; font-size:12.5px;" href="${API_BASE}/plan/${p.id}/export" target="_blank">Export</a></td>
+              </tr>`,
+              )
+              .join("")}
+          </tbody>
+        </table>`;
+        } catch (e) {
+          list.innerHTML = `<p class="empty">Couldn't reach the backend.</p>`;
+        }
+      }
+
+      loadAnalyses();
+      loadPlans();
+    </script>
+  </body>
+</html>
