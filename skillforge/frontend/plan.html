@@ -77,7 +77,9 @@
         const weeks = data.weekly_plan || [];
         const tips = data.tips || [];
 
-        document.getElementById("plan-content").innerHTML = `
+        const contentEl = document.getElementById("plan-content");
+        contentEl.dataset.planId = plan.id;
+        contentEl.innerHTML = `
       <div class="grid-3 section-gap">
         <div class="card">
           <p class="stat-label">Duration</p>
@@ -173,7 +175,10 @@
                 <td>${p.week_number}</td>
                 <td>${fmtCurrency(p.recommended_budget)}</td>
                 <td>${fmtDate(p.created_at)}</td>
-                <td style="text-align:right;"><a class="btn outline" style="padding:6px 12px; font-size:12.5px;" href="${API_BASE}/plan/${p.id}/export" target="_blank">Export</a></td>
+                <td style="text-align:right; white-space:nowrap;">
+                  <a class="btn outline" style="padding:6px 12px; font-size:12.5px;" href="${API_BASE}/plan/${p.id}/export" target="_blank">Export</a>
+                  <button class="btn danger" style="padding:6px 12px; font-size:12.5px; margin-left:6px;" onclick="deletePlan(${p.id})">Delete</button>
+                </td>
               </tr>`,
               )
               .join("")}
@@ -181,6 +186,23 @@
         </table>`;
         } catch (e) {
           list.innerHTML = `<p class="empty">Couldn't reach the backend.</p>`;
+        }
+      }
+
+      async function deletePlan(id) {
+        if (!confirm("Delete this plan? This can't be undone.")) return;
+        try {
+          await apiRequest(`/plan/${id}`, { method: "DELETE" });
+          showToast("Plan deleted");
+          // If the plan currently shown in the detail panel was the one deleted, clear it
+          const content = document.getElementById("plan-content");
+          if (content && content.dataset.planId == id) {
+            content.innerHTML = "";
+            delete content.dataset.planId;
+          }
+          loadPlans();
+        } catch (e) {
+          showToast(e.message, true);
         }
       }
 

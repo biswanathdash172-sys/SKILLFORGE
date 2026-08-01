@@ -71,6 +71,17 @@ def get_plan(plan_id: int, db: Session = Depends(get_db)):
     return plan
 
 
+@router.delete("/{plan_id}", status_code=status.HTTP_200_OK, response_model=schemas.Message)
+def delete_plan(plan_id: int, db: Session = Depends(get_db)):
+    plan = db.query(models.LearningPlan).filter(models.LearningPlan.id == plan_id).first()
+    if not plan:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
+
+    db.delete(plan)
+    db.commit()
+    return schemas.Message(detail=f"Plan {plan_id} deleted")
+
+
 @router.get("/{plan_id}/export")
 def export_plan_pptx(plan_id: int, db: Session = Depends(get_db)):
     """
